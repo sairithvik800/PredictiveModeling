@@ -289,7 +289,7 @@ def get_brain_mask(image_data):
 # X)
 
 # Registration features - (registration_scale_difference, registration_rotation_difference)
-# 
+# target image = https://figshare.com/articles/dataset/Human_MNI_Adult_Templates/7335242?file=13552307 - average305_t1_tal_lin.nii
 
 def registration_features(mri_image_path, template_image_path):
     template_img = nib.load(template_image_path)
