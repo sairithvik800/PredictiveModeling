@@ -2,21 +2,93 @@
 File for context on how/what each feature that was selected by the @feature_selection_pipeline.py pipeline is calculated
 
 Features:
-SELECTED_FEATURES = [
-    'ngtdm_complexity',
-    'bias_field_proxy',
-    'morpho_intensity_kurtosis',
-    '7Networks_RH_Default_PFCdPFCm_2_med_abs_dev',
-    '7Networks_LH_Default_PFC_1_range',
-    'load_time_ms',
-    'synthseg_total_components',
-    'synthseg_fragmentation_index',
-    'tile_gradient_load_imbalance',
-    '7Networks_LH_SalVentAttn_PFCl_1_kurtosis',
-    '7Networks_LH_Default_PFC_1_kurtosis',
-    'inferior_brain_offset',
-    ]
+FEATURES_50 = [
+    # >=50% selection frequency
+    '7Networks_LH_Default_PFC_1_range',                   # 100.0%
+    'synthseg_total_components',                           #  99.8%
+    'morpho_intensity_kurtosis',                           #  99.0%
+    'bias_field_proxy',                                    #  63.5%
+    '7Networks_RH_SalVentAttn_TempOccPar_2_med_abs_dev',  #  53.0%
+    'tile_gradient_load_imbalance',                        #  51.0%
+]
+
+FEATURES_30 = FEATURES_50 + [
+    # >=30% selection frequency
+    'synthseg_fragmentation_index',                        #  45.5%
+    'ngtdm_complexity',                                    #  45.5%
+    '7Networks_RH_Default_PFCdPFCm_2_med_abs_dev',        #  38.8%
+    '7Networks_LH_SalVentAttn_PFCl_1_kurtosis',           #  35.5%
+    'load_time_ms',                                        #  31.8%
+    'registration_scale_difference',                       #  31.2%
+    '7Networks_LH_Vis_5_med_abs_dev',                      #  30.5%
+]
+
+FEATURES_15 = FEATURES_30 + [
+    # >=15% selection frequency (natural cliff at 12% terminates the set)
+    'inferior_brain_offset',                               #  28.2%
+    '7Networks_LH_Default_PFC_1_kurtosis',                 #  27.8%
+    '7Networks_LH_Vis_2_kurtosis',                         #  27.8%
+    'morpho_bbox_volume_ratio',                            #  27.5%
+    'registration_rotation_difference',                    #  24.2%
+    '7Networks_LH_SalVentAttn_ParOper_1_kurtosis',         #  17.0%
+    '7Networks_LH_Limbic_TempPole_1_moment_5',             #  15.5%
+    '7Networks_RH_DorsAttn_Post_1_iqr',                    #  15.2%
+]
 """
+
+# 1)
+
+# Neighborhood Gray-Tone Difference Matrix (NGTDM) complexity - (ngtdm_complexity)
+# 
+
+from scipy import ndimage
+
+def ngtdm_complexity(mri_image_path):
+    n_levels = 64
+    
+    mri_image = nib.load(mri_image_path)
+    img_data = mri_image.get_fdata()
+    brain_mask = get_brain_mask(img_data)
+    
+    brain_vals = img_data[brain_mask]
+    min_val, max_val = brain_vals.min(), brain_vals.max()
+    
+    quantized = np.zeros_like(img_data, dtype=np.int32)
+    quantized[brain_mask] = np.clip(
+        ((img_data[brain_mask] - min_val) / (max_val - min_val) * (n_levels - 1)).astype(np.int32),
+        0, n_levels - 1
+    )
+
+    kernel = np.array([[[0,0,0],[0,1,0],[0,0,0]],
+                    [[0,1,0],[1,0,1],[0,1,0]],
+                    [[0,0,0],[0,1,0],[0,0,0]]]) / 6.0
+
+    neighbor_avg = ndimage.convolve(quantized.astype(float), kernel, mode='constant')
+
+    s = np.zeros(n_levels)
+    N = np.zeros(n_levels)
+
+    for i in range(n_levels):
+        level_mask = (quantized == i) & brain_mask
+        if level_mask.sum() > 0:
+            N[i] = level_mask.sum()
+            s[i] = np.abs(i - neighbor_avg[level_mask]).mean()
+
+    Nvp = N.sum()
+    p = N / (Nvp + 1e-10)
+
+    complexity = 0.0
+    valid_levels = np.where(p > 0)[0]
+    for i in valid_levels:
+        for j in valid_levels:
+            denom = p[i] + p[j]
+            if denom > 1e-10:
+                complexity += np.abs(i - j) * (p[i] * s[i] + p[j] * s[j]) / denom
+        complexity /= (Nvp + 1e-10)
+    
+    return complexity
+
+#2)
 
 # 7 Networks features based on Schaefer Atlas 2018 - (7Networks_RH_Default_PFCdPFCm_2_med_abs_dev, 7Networks_LH_Default_PFC_1_range, 7Networks_LH_SalVentAttn_PFCl_1_kurtosis, 7Networks_LH_Default_PFC_1_kurtosis)
 # cortical voxels in the MNI152 space assigned to 100 regions/ROIs across 7 networks 
@@ -89,82 +161,6 @@ def region_columns(atlas_labels, valid_regions):
             columns.append(f'{label}_{stat}')
     return columns
 
-# Synthseg features - (synthseg_total_components, synthseg_fragmentation_index)
-# 
-# https://github.com/BBillot/SynthSeg
-
-# First run SynthSeg on the MRI images to get segmentation maps, then calculate:
-
-def synthseg_features():
-    seg_path = "" # Directory where SynthSeg segmentation maps are stored
-    seg_data = nib.load(seg_path).get_fdata().astype(int)
-    labels = np.unique(seg_data)
-    n_structures = len(labels) - 1
-    
-    features = {}
-    total_components = 0
-    for label in labels[labels > 0]:
-        labeled_array, num_features = label(seg_data == label)
-        total_components += num_features
-        
-    fragmentation_index = total_components / max(n_structures, 1)
-    features = {
-        'synthseg_total_components': total_components,
-        'synthseg_fragmentation_index': fragmentation_index
-    }
-    
-    return features
-
-# Neighborhood Gray-Tone Difference Matrix (NGTDM) complexity - (ngtdm_complexity)
-# 
-
-from scipy import ndimage
-
-def ngtdm_complexity(mri_image_path):
-    n_levels = 64
-    
-    mri_image = nib.load(mri_image_path)
-    img_data = mri_image.get_fdata()
-    brain_mask = get_brain_mask(img_data)
-    
-    brain_vals = img_data[brain_mask]
-    min_val, max_val = brain_vals.min(), brain_vals.max()
-    
-    quantized = np.zeros_like(img_data, dtype=np.int32)
-    quantized[brain_mask] = np.clip(
-        ((img_data[brain_mask] - min_val) / (max_val - min_val) * (n_levels - 1)).astype(np.int32),
-        0, n_levels - 1
-    )
-
-    kernel = np.array([[[0,0,0],[0,1,0],[0,0,0]],
-                    [[0,1,0],[1,0,1],[0,1,0]],
-                    [[0,0,0],[0,1,0],[0,0,0]]]) / 6.0
-
-    neighbor_avg = ndimage.convolve(quantized.astype(float), kernel, mode='constant')
-
-    s = np.zeros(n_levels)
-    N = np.zeros(n_levels)
-
-    for i in range(n_levels):
-        level_mask = (quantized == i) & brain_mask
-        if level_mask.sum() > 0:
-            N[i] = level_mask.sum()
-            s[i] = np.abs(i - neighbor_avg[level_mask]).mean()
-
-    Nvp = N.sum()
-    p = N / (Nvp + 1e-10)
-
-    complexity = 0.0
-    valid_levels = np.where(p > 0)[0]
-    for i in valid_levels:
-        for j in valid_levels:
-            denom = p[i] + p[j]
-            if denom > 1e-10:
-                complexity += np.abs(i - j) * (p[i] * s[i] + p[j] * s[j]) / denom
-        complexity /= (Nvp + 1e-10)
-    
-    return complexity
-    
 # MRI Signal Intensity - (bias_field_proxy, morpho_intensity_kurtosis)
 # Bias field proxy: standard deviation of sampled intensities / mean of sampled intensities
 # Morpho intensity kurtosis: kurtosis of brain voxel intensities
@@ -194,32 +190,37 @@ def signal_intensity(mri_image_path):
     
     return bias_field_proxy, morpho_intensity_kurtosis
 
-# Spatial features - (inferior_brain_offset)
-#
+# 3)
 
-from scipy.ndimage import center_of_mass
+# Synthseg features - (synthseg_total_components, synthseg_fragmentation_index)
+# 
+# https://github.com/BBillot/SynthSeg
 
-def spatial_features(mri_image_path):
-    mri_image = nib.load(mri_image_path)
-    img_data = mri_image.get_fdata()
-    brain_mask = get_brain_mask(img_data)
-    brain_vals = img_data[brain_mask]
-    y, x, z = np.ogrid[:img_data.shape[0], :img_data.shape[1], :img_data.shape[2]]
+# First run SynthSeg on the MRI images to get segmentation maps, then calculate:
+
+def synthseg_features():
+    seg_path = "" # Directory where SynthSeg segmentation maps are stored
+    seg_data = nib.load(seg_path).get_fdata().astype(int)
+    labels = np.unique(seg_data)
+    n_structures = len(labels) - 1
     
-    z_coords = np.where(brain_mask)[2]
-    hist, bins = np.histogram(brain_vals, bins=50)
-    inferior_threshold = np.percentile(z_coords, 25)
-    inferior_mask = brain_mask & (z >= inferior_threshold)
-    if inferior_mask.sum() > 0:
-        inferior_com = center_of_mass(inferior_mask.astype(float))
-        full_com = center_of_mass(brain_mask.astype(float))
-        inferior_brain_offset = np.linalg.norm(np.array(inferior_com) - np.array(full_com))
-    else:
-        inferior_brain_offset = 0
-            
-    return inferior_brain_offset
+    features = {}
+    total_components = 0
+    for label in labels[labels > 0]:
+        labeled_array, num_features = label(seg_data == label)
+        total_components += num_features
+        
+    fragmentation_index = total_components / max(n_structures, 1)
+    features = {
+        'synthseg_total_components': total_components,
+        'synthseg_fragmentation_index': fragmentation_index
+    }
+    
+    return features
 
-# Computational performance features - (load_time_ms, tile_gradient_load_imbalance)
+# 4)
+
+# Computational performance features - (load_time_ms)
 # Load time: time taken to load the MRI image in milliseconds
 
 import time
@@ -228,7 +229,17 @@ def computational_performance(mri_image_path):
     start = time.perf_counter()
     mri_image = nib.load(mri_image_path)
     img_data = mri_image.get_fdata()
-    load_time_ms = (time.perf_counter() - start) * 1000
+    load_time_ms = (time.perf_counter() - start) * 1000  
+    return load_time_ms
+
+# 5)
+# Spatial & geometric features - (tile_gradient_load_imbalance, inferior_brain_offset)
+
+from scipy.ndimage import center_of_mass
+
+def spatial_geometric_features(mri_image_path):
+    mri_image = nib.load(mri_image_path)
+    img_data = mri_image.get_fdata()
     
     brain_mask = get_brain_mask(img_data)
     if brain_mask.sum() < 100:
@@ -252,9 +263,20 @@ def computational_performance(mri_image_path):
         if len(gradient_magnitudes) > 1:
             tile_gradient_load_imbalance = np.max(gradient_magnitudes) / (np.mean(gradient_magnitudes) + 1e-8)
         else:
-            tile_gradient_load_imbalance = 0    
-
-    return load_time_ms, tile_gradient_load_imbalance
+            tile_gradient_load_imbalance = 0
+            
+    y, x, z = np.ogrid[:img_data.shape[0], :img_data.shape[1], :img_data.shape[2]]
+    z_coords = np.where(brain_mask)[2]
+    inferior_threshold = np.percentile(z_coords, 25)
+    inferior_mask = brain_mask & (z >= inferior_threshold)
+    if inferior_mask.sum() > 0:
+        inferior_com = center_of_mass(inferior_mask.astype(float))
+        full_com = center_of_mass(brain_mask.astype(float))
+        inferior_brain_offset = np.linalg.norm(np.array(inferior_com) - np.array(full_com))
+    else:
+        inferior_brain_offset = 0
+    
+    return tile_gradient_load_imbalance, inferior_brain_offset
 
 # Brain mask helper function
 def get_brain_mask(image_data):
@@ -263,3 +285,46 @@ def get_brain_mask(image_data):
     else:
         threshold = 0
     return image_data > threshold
+
+# X)
+
+# Registration features - (registration_scale_difference, registration_rotation_difference)
+# 
+
+def registration_features(mri_image_path, template_image_path):
+    template_img = nib.load(template_image_path)
+    template_data = template_img.get_fdata()
+    template_affine = template_img.affine
+    
+    img = nib.load(mri_image_path)
+    img_data = img.get_fdata()
+    img_affine = img.affine
+    
+    template_rotation = template_affine[:3, :3]
+    img_rotation = img_affine[:3, :3]
+    
+    registration_rotation_difference = np.linalg.norm(img_rotation - template_rotation, ord='fro')
+    
+    img_det = np.linalg.det(img_rotation)
+    template_det = np.linalg.det(template_rotation)
+    registration_scale_difference = np.abs(img_det - template_det)
+    
+    return registration_scale_difference, registration_rotation_difference
+
+# X) 
+
+# Morphological features - (morpho_bbox_volume_ratio)
+#
+
+def morphological_features(mri_image_path):
+    mri_image = nib.load(mri_image_path)
+    img_data = mri_image.get_fdata()
+    brain_mask = get_brain_mask(img_data)
+    
+    total_voxels = brain_mask.sum()
+    coords = np.where(brain_mask)
+    bbox_volume = ((coords[0].max() - coords[0].min() + 1) *
+                   (coords[1].max() - coords[1].min() + 1) *
+                    (coords[2].max() - coords[2].min() + 1))
+    morpho_bbox_volume_ratio = total_voxels / (bbox_volume + 1e-10)
+    return morpho_bbox_volume_ratio
