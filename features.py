@@ -139,6 +139,8 @@ def region_stats(values):
         median_abs_deviation(values),
         kurtosis(values),
         np.ptp(values), # range
+        moment(values, moment=5),
+        (np.percentile(values, 75) - np.percentile(values, 25))
     ]
     return stats
 
@@ -157,7 +159,7 @@ def region_columns(atlas_labels, valid_regions):
     columns = ['filename']
     for i in valid_regions:
         label = atlas_labels[i]
-        for stat in ['med_abs_dev', 'kurtosis', 'range']:
+        for stat in ['med_abs_dev', 'kurtosis', 'range', 'moment5', 'iqr']:
             columns.append(f'{label}_{stat}')
     return columns
 
