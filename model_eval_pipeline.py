@@ -301,7 +301,7 @@ def log_experiment_run(
         'n_after_target_corr': pipeline_stats['after_target_corr'],
         'n_after_stability': pipeline_stats['after_stability'],
         'n_after_clustering': pipeline_stats['after_clustering'],
-        'n_after_rfecv': pipeline_stats['after_rfecv'],
+        'n_after_rfecv': pipeline_stats.get('after_rfecv'),
 
         # -- Final feature set --
         'n_selected_features': len(selected_features),
@@ -382,3 +382,58 @@ def log_experiment_run(
         row_df.to_csv(output_path, index=False)
 
     print(f'\nExperiment run #{run_id} logged to {output_path}')
+
+
+def log_feature_selection_run(
+    selected_features: list[str],
+    pipeline_stats: dict[str, int],
+    random_seed: int,
+    output_path: str = constants.EXPERIMENT_LOG_CSV,
+) -> None:
+    """Append a feature-selection-only row to the experiment log CSV.
+
+    Logs run identity, pipeline stage counts, and selected features.
+    No model metrics are written. Compatible with rows from log_experiment_run()
+    — model metric columns will be NaN for these rows when read back.
+
+    Args:
+        selected_features: Final feature names from the selection pipeline.
+        pipeline_stats: Dict with keys initial, after_variance, after_corr_filter,
+            after_target_corr, after_stability, after_clustering.
+        random_seed: The numpy random seed used for this run.
+        output_path: Path to the experiment log CSV file.
+    """
+    file_exists = os.path.exists(output_path)
+    if file_exists:
+        try:
+            existing_df = pd.read_csv(output_path)
+            run_id = int(existing_df['run_id'].max()) + 1
+        except (pd.errors.ParserError, pd.errors.EmptyDataError, KeyError):
+            run_id = 1
+            file_exists = False
+    else:
+        run_id = 1
+
+    row = {
+        'run_id': run_id,
+        'timestamp': datetime.now().isoformat(timespec='seconds'),
+        'random_seed': random_seed,
+        'n_initial': pipeline_stats['initial'],
+        'n_after_variance': pipeline_stats['after_variance'],
+        'n_after_corr_filter': pipeline_stats['after_corr_filter'],
+        'n_after_target_corr': pipeline_stats['after_target_corr'],
+        'n_after_stability': pipeline_stats['after_stability'],
+        'n_after_clustering': pipeline_stats['after_clustering'],
+        'n_selected_features': len(selected_features),
+        'selected_features': json.dumps(selected_features),
+    }
+
+    row_df = pd.DataFrame([row])
+
+    if file_exists:
+        combined = pd.concat([existing_df, row_df], ignore_index=True)
+        combined.to_csv(output_path, index=False)
+    else:
+        row_df.to_csv(output_path, index=False)
+
+    print(f'\nFeature selection run #{run_id} logged to {output_path}')

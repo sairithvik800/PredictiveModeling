@@ -291,17 +291,6 @@ def full_feature_selection_pipeline(df, target_col='makespan'):
     pipeline_stats['after_clustering'] = len(features)
     print()
 
-    # Stage 5: RFECV
-    print("STAGE 5: RFECV Refinement")
-    print("-" * 40)
-    if len(features) > 10:
-        features, rfecv_model = rfecv_selection(df, features, target_col, min_features=5)
-        pipeline_stats['after_rfecv'] = len(features)
-    else:
-        print(f"  RFECV skipped: only {len(features)} features remaining")
-        pipeline_stats['after_rfecv'] = len(features)
-    print()
-
     # Summary
     print("=" * 70)
     print("PIPELINE SUMMARY")
@@ -312,7 +301,6 @@ def full_feature_selection_pipeline(df, target_col='makespan'):
     print(f"After target corr:       {pipeline_stats['after_target_corr']}")
     print(f"After stability:         {pipeline_stats['after_stability']}")
     print(f"After clustering:        {pipeline_stats['after_clustering']}")
-    print(f"After RFECV:             {pipeline_stats['after_rfecv']}")
     print()
     print("FINAL SELECTED FEATURES:")
     for i, feat in enumerate(features, 1):

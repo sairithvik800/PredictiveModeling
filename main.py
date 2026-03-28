@@ -44,55 +44,68 @@ MANUAL_PREDICTION_OUTPUTS = {
 }
 
 
-# Features selected by frequency threshold from 400 stochastic pipeline runs.
-# Each tier is a strict subset of the next: FEATURES_50 ⊂ FEATURES_30 ⊂ FEATURES_15.
+# Features selected by frequency threshold from 500 stochastic pipeline runs.
+# Each tier is a strict subset of the next: FEATURES_96 ⊂ FEATURES_50 ⊂ FEATURES_15.
 # Used for sensitivity analysis and as the primary feature set (FEATURES_15 = DEFAULT_FEATURES).
+# Tiers reflect natural breaks in the frequency distribution:
+#   >=96%: sharpest break in the distribution (96.2% -> 81.8%, 14pp drop)
+#   >=50%: top of the gradual-decline plateau
+#   >=15%: natural cliff into noise (24.2% -> 14.0%, 10pp drop)
 
-FEATURES_50 = [
-    # >=50% selection frequency
+FEATURES_96 = [
+    # >=96% selection frequency — "virtually always selected"
+    'load_time_ms',                                        # 100.0%
+    'synthseg_total_components',                           # 100.0%
+    'synthseg_fragmentation_index',                        # 100.0%
+    'inferior_brain_offset',                               # 100.0%
     '7Networks_LH_Default_PFC_1_range',                   # 100.0%
-    'synthseg_total_components',                           #  99.8%
-    'morpho_intensity_kurtosis',                           #  99.0%
-    'bias_field_proxy',                                    #  63.5%
-    '7Networks_RH_SalVentAttn_TempOccPar_2_med_abs_dev',  #  53.0%
-    'tile_gradient_load_imbalance',                        #  51.0%
+    'ngtdm_complexity',                                    # 100.0%
+    '7Networks_RH_Default_PFCdPFCm_2_med_abs_dev',        #  99.8%
+    'bias_field_proxy',                                    #  99.8%
+    'morpho_intensity_kurtosis',                           #  96.2%
 ]
 
-FEATURES_30 = FEATURES_50 + [
-    # >=30% selection frequency
-    'synthseg_fragmentation_index',                        #  45.5%
-    'ngtdm_complexity',                                    #  45.5%
-    '7Networks_RH_Default_PFCdPFCm_2_med_abs_dev',        #  38.8%
-    '7Networks_LH_SalVentAttn_PFCl_1_kurtosis',           #  35.5%
-    'load_time_ms',                                        #  31.8%
-    'registration_scale_difference',                       #  31.2%
-    '7Networks_LH_Vis_5_med_abs_dev',                      #  30.5%
+FEATURES_50 = FEATURES_96 + [
+    # >=50% selection frequency
+    'asymmetry_hemispheric_volume_ratio',                  #  81.8%
+    '7Networks_LH_SalVentAttn_PFCl_1_kurtosis',           #  76.0%
+    'tile_gradient_load_imbalance',                        #  69.6%
+    '7Networks_LH_Default_PFC_1_kurtosis',                 #  68.4%
+    'registration_scale_difference',                       #  56.4%
+    '7Networks_LH_Limbic_TempPole_1_moment_5',             #  50.0%
 ]
 
-FEATURES_15 = FEATURES_30 + [
-    # >=15% selection frequency (natural cliff at 12% terminates the set)
-    'inferior_brain_offset',                               #  28.2%
-    '7Networks_LH_Default_PFC_1_kurtosis',                 #  27.8%
-    '7Networks_LH_Vis_2_kurtosis',                         #  27.8%
-    'morpho_bbox_volume_ratio',                            #  27.5%
-    'registration_rotation_difference',                    #  24.2%
-    '7Networks_LH_SalVentAttn_ParOper_1_kurtosis',         #  17.0%
-    '7Networks_LH_Limbic_TempPole_1_moment_5',             #  15.5%
-    '7Networks_RH_DorsAttn_Post_1_iqr',                    #  15.2%
+FEATURES_15 = FEATURES_50 + [
+    # >=15% selection frequency (natural cliff at 24.2% -> 14.0% terminates the set)
+    '7Networks_RH_SomMot_2_kurtosis',                     #  42.4%
+    '7Networks_RH_Cont_PFCl_3_kurtosis',                  #  36.4%
+    '7Networks_RH_DorsAttn_Post_3_kurtosis',               #  24.2%
 ]
 
-# Primary feature set for paper results (>=15% threshold, n=21).
+# Primary feature set for paper results (>=15% threshold, n=18).
 DEFAULT_FEATURES = FEATURES_15
 
 
-def run_with_feature_selection(random_seed=None, output_path=constants.EXPERIMENT_LOG_CSV):
-    """Main execution: run feature selection pipeline then evaluate models.
+def run_with_feature_selection(
+    random_seed: int | None = None,
+    output_path: str = constants.EXPERIMENT_LOG_CSV,
+    evaluate_models: bool = False,
+) -> tuple[list[str], dict | None, int]:
+    """Run feature selection pipeline, optionally followed by model evaluation.
 
     Args:
         random_seed: Numpy random seed for reproducibility. If None, a random
             seed is generated and printed so the run can be replayed.
         output_path: Path to the experiment log CSV file. Defaults to
             constants.EXPERIMENT_LOG_CSV.
+        evaluate_models: If False (default), only run feature selection and log
+            selected features — no model evaluation. Set to True to also run
+            nested CV for all models and log full metrics (note: those metrics
+            have data leakage and should not be cited as paper results).
+
+    Returns:
+        Tuple of (selected_features, model_results_map, random_seed).
+        model_results_map is None when evaluate_models=False.
     """
     if random_seed is None:
         random_seed = int(np.random.randint(0, 2**31 - 1))
@@ -104,33 +117,41 @@ def run_with_feature_selection(random_seed=None, output_path=constants.EXPERIMEN
 
     selected_features, stats = feature_selection_pipeline.full_feature_selection_pipeline(df, target_col='makespan')
 
-    X_all = df[selected_features].values
-    y_all = df['makespan'].values
+    if evaluate_models:
+        X_all = df[selected_features].values
+        y_all = df['makespan'].values
 
-    print("\n" + "=" * 70)
-    print("MODEL EVALUATION WITH SELECTED FEATURES")
-    print("=" * 70 + "\n")
+        print("\n" + "=" * 70)
+        print("MODEL EVALUATION WITH SELECTED FEATURES")
+        print("=" * 70 + "\n")
 
-    model_results_map = {}
-    for model in DEFAULT_MODELS:
-        pipeline, param_grid = model.get_pipeline_and_params()
-        print(f"\n{'=' * 70}")
-        print(f"Now running {model.name}...")
-        print(f"{'=' * 70}\n")
-        results = model_eval_pipeline.nested_cv_evaluation(pipeline, param_grid, X_all, y_all)
-        model_eval_pipeline.print_nested_cv_results(model.name, results)
-        model_eval_pipeline.save_nested_cv_predictions(df, results, PREDICTION_OUTPUTS[model.key])
-        model_results_map[model.key] = results
+        model_results_map = {}
+        for model in DEFAULT_MODELS:
+            pipeline, param_grid = model.get_pipeline_and_params()
+            print(f"\n{'=' * 70}")
+            print(f"Now running {model.name}...")
+            print(f"{'=' * 70}\n")
+            results = model_eval_pipeline.nested_cv_evaluation(pipeline, param_grid, X_all, y_all)
+            model_eval_pipeline.print_nested_cv_results(model.name, results)
+            model_eval_pipeline.save_nested_cv_predictions(df, results, PREDICTION_OUTPUTS[model.key])
+            model_results_map[model.key] = results
 
-    model_eval_pipeline.log_experiment_run(
-        selected_features=selected_features,
-        pipeline_stats=stats,
-        model_results_map=model_results_map,
-        random_seed=random_seed,
-        output_path=output_path,
-    )
-
-    return selected_features, model_results_map, random_seed
+        model_eval_pipeline.log_experiment_run(
+            selected_features=selected_features,
+            pipeline_stats=stats,
+            model_results_map=model_results_map,
+            random_seed=random_seed,
+            output_path=output_path,
+        )
+        return selected_features, model_results_map, random_seed
+    else:
+        model_eval_pipeline.log_feature_selection_run(
+            selected_features=selected_features,
+            pipeline_stats=stats,
+            random_seed=random_seed,
+            output_path=output_path,
+        )
+        return selected_features, None, random_seed
 
 
 def run_with_manual_features(features=None):
@@ -175,8 +196,8 @@ def run_threshold_sensitivity():
     saved to the main prediction CSVs so they do not overwrite primary results.
     """
     thresholds = [
+        ('>=96%',  FEATURES_96),
         ('>=50%',  FEATURES_50),
-        ('>=30%',  FEATURES_30),
         ('>=15%',  FEATURES_15),
     ]
 
@@ -233,6 +254,6 @@ if __name__ == "__main__":
 
     run_threshold_sensitivity()
     """
-    for i in range(100):
+    for i in range(500):
         run_with_feature_selection(output_path=constants.EXPERIMENT_LOG_CSV)
     """

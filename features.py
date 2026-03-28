@@ -1,38 +1,37 @@
 """
-File for context on how/what each feature that was selected by the @feature_selection_pipeline.py pipeline is calculated
+File for context on how/what each feature that was selected by the @feature_selection_pipeline.py pipeline is calculated.
 
-Features:
-FEATURES_50 = [
-    # >=50% selection frequency
+Features derived from 500 stochastic pipeline runs. Tiers reflect natural breaks in the frequency distribution.
+FEATURES_96 ⊂ FEATURES_50 ⊂ FEATURES_15 (= DEFAULT_FEATURES).
+
+FEATURES_96 = [
+    # >=96% selection frequency — sharpest break (96.2% -> 81.8%, 14pp drop)
+    'load_time_ms',                                        # 100.0%
+    'synthseg_total_components',                           # 100.0%
+    'synthseg_fragmentation_index',                        # 100.0%
+    'inferior_brain_offset',                               # 100.0%
     '7Networks_LH_Default_PFC_1_range',                   # 100.0%
-    'synthseg_total_components',                           #  99.8%
-    'morpho_intensity_kurtosis',                           #  99.0%
-    'bias_field_proxy',                                    #  63.5%
-    '7Networks_RH_SalVentAttn_TempOccPar_2_med_abs_dev',  #  53.0%
-    'tile_gradient_load_imbalance',                        #  51.0%
+    'ngtdm_complexity',                                    # 100.0%
+    '7Networks_RH_Default_PFCdPFCm_2_med_abs_dev',        #  99.8%
+    'bias_field_proxy',                                    #  99.8%
+    'morpho_intensity_kurtosis',                           #  96.2%
 ]
 
-FEATURES_30 = FEATURES_50 + [
-    # >=30% selection frequency
-    'synthseg_fragmentation_index',                        #  45.5%
-    'ngtdm_complexity',                                    #  45.5%
-    '7Networks_RH_Default_PFCdPFCm_2_med_abs_dev',        #  38.8%
-    '7Networks_LH_SalVentAttn_PFCl_1_kurtosis',           #  35.5%
-    'load_time_ms',                                        #  31.8%
-    'registration_scale_difference',                       #  31.2%
-    '7Networks_LH_Vis_5_med_abs_dev',                      #  30.5%
+FEATURES_50 = FEATURES_96 + [
+    # >=50% selection frequency — top of gradual-decline plateau
+    'asymmetry_hemispheric_volume_ratio',                  #  81.8%
+    '7Networks_LH_SalVentAttn_PFCl_1_kurtosis',           #  76.0%
+    'tile_gradient_load_imbalance',                        #  69.6%
+    '7Networks_LH_Default_PFC_1_kurtosis',                 #  68.4%
+    'registration_scale_difference',                       #  56.4%
+    '7Networks_LH_Limbic_TempPole_1_moment_5',             #  50.0%
 ]
 
-FEATURES_15 = FEATURES_30 + [
-    # >=15% selection frequency (natural cliff at 12% terminates the set)
-    'inferior_brain_offset',                               #  28.2%
-    '7Networks_LH_Default_PFC_1_kurtosis',                 #  27.8%
-    '7Networks_LH_Vis_2_kurtosis',                         #  27.8%
-    'morpho_bbox_volume_ratio',                            #  27.5%
-    'registration_rotation_difference',                    #  24.2%
-    '7Networks_LH_SalVentAttn_ParOper_1_kurtosis',         #  17.0%
-    '7Networks_LH_Limbic_TempPole_1_moment_5',             #  15.5%
-    '7Networks_RH_DorsAttn_Post_1_iqr',                    #  15.2%
+FEATURES_15 = FEATURES_50 + [
+    # >=15% selection frequency — natural cliff into noise (24.2% -> 14.0%, 10pp drop)
+    '7Networks_RH_SomMot_2_kurtosis',                     #  42.4%
+    '7Networks_RH_Cont_PFCl_3_kurtosis',                  #  36.4%
+    '7Networks_RH_DorsAttn_Post_3_kurtosis',               #  24.2%
 ]
 """
 
@@ -330,3 +329,29 @@ def morphological_features(mri_image_path):
                     (coords[2].max() - coords[2].min() + 1))
     morpho_bbox_volume_ratio = total_voxels / (bbox_volume + 1e-10)
     return morpho_bbox_volume_ratio
+
+# X)
+
+# Hemispheric asymmetry - (asymmetry_hemispheric_volume_ratio)
+# Ratio of left to right hemisphere brain voxel counts, split at the image midplane.
+# Values near 1.0 indicate symmetry; deviations indicate hemispheric volume asymmetry.
+
+def asymmetry_hemispheric_volume_ratio(mri_image_path):
+    mri_image = nib.load(mri_image_path)
+    img_data = mri_image.get_fdata()
+    brain_mask = get_brain_mask(img_data)
+
+    com = center_of_mass(brain_mask)
+    midline_x = int(com[0])
+
+    left_hemisphere = brain_mask.copy()
+    left_hemisphere[:midline_x, :, :] = 0
+
+    right_hemisphere = brain_mask.copy()
+    right_hemisphere[midline_x:, :, :] = 0
+
+    lh_voxels = left_hemisphere.sum()
+    rh_voxels = right_hemisphere.sum()
+
+    asymmetry_hemispheric_volume_ratio = np.abs(lh_voxels - rh_voxels) / (lh_voxels + rh_voxels + 1e-10)
+    return asymmetry_hemispheric_volume_ratio
