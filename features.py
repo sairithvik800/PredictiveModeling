@@ -2,7 +2,7 @@
 File for context on how/what each feature that was selected by the @feature_selection_pipeline.py pipeline is calculated.
 
 Features derived from 500 stochastic pipeline runs. Tiers reflect natural breaks in the frequency distribution.
-FEATURES_96 ⊂ FEATURES_50 ⊂ FEATURES_15 (= DEFAULT_FEATURES).
+FEATURES_96 ⊂ FEATURES_50 ⊂ FEATURES_24 (= DEFAULT_FEATURES).
 
 FEATURES_96 = [
     # >=96% selection frequency — sharpest break (96.2% -> 81.8%, 14pp drop)
@@ -27,8 +27,8 @@ FEATURES_50 = FEATURES_96 + [
     '7Networks_LH_Limbic_TempPole_1_moment_5',             #  50.0%
 ]
 
-FEATURES_15 = FEATURES_50 + [
-    # >=15% selection frequency — natural cliff into noise (24.2% -> 14.0%, 10pp drop)
+FEATURES_24 = FEATURES_50 + [
+    # >=24% selection frequency — natural cliff into noise (24.2% -> 14.0%, 10pp drop)
     '7Networks_RH_SomMot_2_kurtosis',                     #  42.4%
     '7Networks_RH_Cont_PFCl_3_kurtosis',                  #  36.4%
     '7Networks_RH_DorsAttn_Post_3_kurtosis',               #  24.2%

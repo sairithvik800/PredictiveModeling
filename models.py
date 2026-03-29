@@ -225,16 +225,16 @@ class RandomForestModel(ModelConfig):
 
 DEFAULT_MODELS = [
     RidgeModel(),
-    GPRMatern15Model(),
+    # GPRMatern15Model(),   # explored; ~0.316 at n=9, threshold-insensitive but dominated by Matern 2.5
     GPRMatern25Model(),
-    GPRRBFModel(),
+    # GPRRBFModel(),        # explored; ~0.375, near-identical to Matern 2.5; RBF smoothness not justified
     BayesianRidgeModel(),
-    ARDModel(),
+    # ARDModel(),           # explored; consistently poor (<=0.247 overall R2), overfits at n=88
     HuberModel(),
-    SVRModel(),
-    ElasticNetModel(),
-    RVMModel(),
+    # SVRModel(),           # explored; ~0.277, high overfit gap, below top linear models
+    # ElasticNetModel(),    # explored; redundant with Ridge (inner CV pushes l1_ratio toward 1.0)
+    # RVMModel(),           # explored; ~0.216, high variance across folds
     KernelRidgeModel(),
-    HistGBModel(),
+    # HistGBModel(),        # explored; R2 degrades with more features (0.076 at n=18), severe overfit
     RandomForestModel(),
 ]

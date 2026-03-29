@@ -13,44 +13,44 @@ from models import DEFAULT_MODELS
 # For feature selection runs
 PREDICTION_OUTPUTS = {
     'ridge':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_ridge.csv',
-    'gpr':            constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_gpr.csv',
+    # 'gpr':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_gpr.csv',          # dropped: dominated by Matern 2.5
     'gpr_matern25':   constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_gpr_matern25.csv',
-    'gpr_rbf':        constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_gpr_rbf.csv',
+    # 'gpr_rbf':      constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_gpr_rbf.csv',      # dropped: near-identical to Matern 2.5
     'bayesian_ridge': constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_bayesian_ridge.csv',
-    'ard':            constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_ard.csv',
+    # 'ard':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_ard.csv',           # dropped: poor at all thresholds
     'huber':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_huber.csv',
-    'svr':            constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_svr.csv',
-    'elastic_net':    constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_elastic_net.csv',
-    'rvm':            constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_rvm.csv',
+    # 'svr':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_svr.csv',           # dropped: below top linear models
+    # 'elastic_net':  constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_elastic_net.csv',   # dropped: redundant with Ridge
+    # 'rvm':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_rvm.csv',           # dropped: high variance, low R2
     'kernel_ridge':   constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_kernel_ridge.csv',
-    'hist_gb':        constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_hist_gb.csv',
+    # 'hist_gb':      constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_hist_gb.csv',       # dropped: severe overfit, degrades with features
     'random_forest':  constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_random_forest.csv',
 }
 
 MANUAL_PREDICTION_OUTPUTS = {
     'ridge':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_ridge_manual.csv',
-    'gpr':            constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_gpr_manual.csv',
+    # 'gpr':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_gpr_manual.csv',          # dropped: dominated by Matern 2.5
     'gpr_matern25':   constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_gpr_matern25_manual.csv',
-    'gpr_rbf':        constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_gpr_rbf_manual.csv',
+    # 'gpr_rbf':      constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_gpr_rbf_manual.csv',      # dropped: near-identical to Matern 2.5
     'bayesian_ridge': constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_bayesian_ridge_manual.csv',
-    'ard':            constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_ard_manual.csv',
+    # 'ard':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_ard_manual.csv',           # dropped: poor at all thresholds
     'huber':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_huber_manual.csv',
-    'svr':            constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_svr_manual.csv',
-    'elastic_net':    constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_elastic_net_manual.csv',
-    'rvm':            constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_rvm_manual.csv',
+    # 'svr':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_svr_manual.csv',           # dropped: below top linear models
+    # 'elastic_net':  constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_elastic_net_manual.csv',   # dropped: redundant with Ridge
+    # 'rvm':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_rvm_manual.csv',           # dropped: high variance, low R2
     'kernel_ridge':   constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_kernel_ridge_manual.csv',
-    'hist_gb':        constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_hist_gb_manual.csv',
+    # 'hist_gb':      constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_hist_gb_manual.csv',       # dropped: severe overfit, degrades with features
     'random_forest':  constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_random_forest_manual.csv',
 }
 
 
 # Features selected by frequency threshold from 500 stochastic pipeline runs.
-# Each tier is a strict subset of the next: FEATURES_96 ⊂ FEATURES_50 ⊂ FEATURES_15.
-# Used for sensitivity analysis and as the primary feature set (FEATURES_15 = DEFAULT_FEATURES).
+# Each tier is a strict subset of the next: FEATURES_96 ⊂ FEATURES_50 ⊂ FEATURES_24.
+# Used for sensitivity analysis and as the primary feature set (FEATURES_24 = DEFAULT_FEATURES).
 # Tiers reflect natural breaks in the frequency distribution:
 #   >=96%: sharpest break in the distribution (96.2% -> 81.8%, 14pp drop)
 #   >=50%: top of the gradual-decline plateau
-#   >=15%: natural cliff into noise (24.2% -> 14.0%, 10pp drop)
+#   >=24%: natural cliff into noise (24.2% -> 14.0%, 10pp drop)
 
 FEATURES_96 = [
     # >=96% selection frequency — "virtually always selected"
@@ -75,15 +75,15 @@ FEATURES_50 = FEATURES_96 + [
     '7Networks_LH_Limbic_TempPole_1_moment_5',             #  50.0%
 ]
 
-FEATURES_15 = FEATURES_50 + [
-    # >=15% selection frequency (natural cliff at 24.2% -> 14.0% terminates the set)
+FEATURES_24 = FEATURES_50 + [
+    # >=24% selection frequency (natural cliff at 24.2% -> 14.0% terminates the set)
     '7Networks_RH_SomMot_2_kurtosis',                     #  42.4%
     '7Networks_RH_Cont_PFCl_3_kurtosis',                  #  36.4%
     '7Networks_RH_DorsAttn_Post_3_kurtosis',               #  24.2%
 ]
 
-# Primary feature set for paper results (>=15% threshold, n=18).
-DEFAULT_FEATURES = FEATURES_15
+# Primary feature set for paper results (>=24% threshold, n=18).
+DEFAULT_FEATURES = FEATURES_24
 
 
 def run_with_feature_selection(
@@ -162,7 +162,7 @@ def run_with_manual_features(features=None):
 
     Args:
         features: Feature list to use for all models. If None, uses
-            DEFAULT_FEATURES (the >=15% consensus set, n=21).
+            DEFAULT_FEATURES (the >=24% consensus set, n=18).
     """
     if features is None:
         features = DEFAULT_FEATURES
@@ -190,7 +190,7 @@ def run_with_manual_features(features=None):
 
 
 def run_threshold_sensitivity():
-    """Sensitivity analysis: evaluate all models at >=50%, >=30%, and >=15% thresholds.
+    """Sensitivity analysis: evaluate all models at >=96%, >=50%, and >=24% thresholds.
 
     Intended for the paper's sensitivity table. Results are printed but not
     saved to the main prediction CSVs so they do not overwrite primary results.
@@ -198,7 +198,7 @@ def run_threshold_sensitivity():
     thresholds = [
         ('>=96%',  FEATURES_96),
         ('>=50%',  FEATURES_50),
-        ('>=15%',  FEATURES_15),
+        ('>=24%',  FEATURES_24),
     ]
 
     df = pd.read_csv(constants.FEATURES_CSV_OUTPUT)
