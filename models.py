@@ -7,6 +7,7 @@ from sklearn.svm import SVR
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
 from sklearn_rvm import EMRVR
+from xgboost import XGBRegressor
 
 
 class ModelConfig:
@@ -133,9 +134,9 @@ class SVRModel(ModelConfig):
     name = 'SVR (RBF)'
     key = 'svr'
     param_grid = {
-        'svr__C': [0.1, 1, 10, 100, 500],
-        'svr__epsilon': [0.01, 0.1, 0.5, 1.0],
-        'svr__gamma': ['scale', 'auto'],
+        'svr__C': [1000, 2000, 3000],
+        'svr__epsilon': [1.5, 2.0, 2.5],
+        'svr__gamma': [0.003, 0.005, 0.007],
     }
 
     def build_pipeline(self):
@@ -170,7 +171,6 @@ class RVMModel(ModelConfig):
             ('scaler', StandardScaler()),
             ('rvm', EMRVR(kernel='rbf')),
         ])
-
 
 
 class KernelRidgeModel(ModelConfig):
@@ -209,10 +209,11 @@ class RandomForestModel(ModelConfig):
     name = 'Random Forest'
     key = 'random_forest'
     param_grid = {
-        'random_forest__n_estimators': [100, 200, 500],
-        'random_forest__max_depth': [None, 3, 5, 7],
-        'random_forest__max_features': ['sqrt', 'log2', 0.5],
-        'random_forest__min_samples_leaf': [1, 2, 4],
+        'random_forest__n_estimators': [500, 800],
+        'random_forest__max_depth': [4, 5, 6],
+        'random_forest__max_features': [0.25, 0.3, 0.4],
+        'random_forest__min_samples_leaf': [2, 3],
+        'random_forest__ccp_alpha': [0.05, 0.1, 0.15, 0.2],
     }
 
     def build_pipeline(self):
@@ -222,19 +223,41 @@ class RandomForestModel(ModelConfig):
         ])
 
 
+class XGBoostModel(ModelConfig):
+    name = 'XGBoost'
+    key = 'xgboost'
+    param_grid = {
+        'xgboost__n_estimators': [100, 200, 300],
+        'xgboost__max_depth': [2, 3, 4],
+        'xgboost__learning_rate': [0.01, 0.05, 0.1],
+        'xgboost__subsample': [0.6, 0.8],
+        'xgboost__reg_lambda': [1.0, 10.0, 100.0],
+    }
+
+    def build_pipeline(self):
+        return Pipeline([
+            ('scaler', StandardScaler()),
+            ('xgboost', XGBRegressor(
+                random_state=42,
+                n_jobs=-1,
+                verbosity=0,
+            )),
+        ])
+
 
 DEFAULT_MODELS = [
     RidgeModel(),
     # GPRMatern15Model(),   # explored; ~0.316 at n=9, threshold-insensitive but dominated by Matern 2.5
-    GPRMatern25Model(),
+    # GPRMatern25Model(),   # explored; ~0.375, threshold-insensitive; dropped for model diversity
     # GPRRBFModel(),        # explored; ~0.375, near-identical to Matern 2.5; RBF smoothness not justified
     BayesianRidgeModel(),
     # ARDModel(),           # explored; consistently poor (<=0.247 overall R2), overfits at n=88
     HuberModel(),
-    # SVRModel(),           # explored; ~0.277, high overfit gap, below top linear models
+    SVRModel(),
     # ElasticNetModel(),    # explored; redundant with Ridge (inner CV pushes l1_ratio toward 1.0)
     # RVMModel(),           # explored; ~0.216, high variance across folds
-    KernelRidgeModel(),
+    # KernelRidgeModel(),   # explored; ~0.384; dropped in favor of SVR for kernel/SVM representation
     # HistGBModel(),        # explored; R2 degrades with more features (0.076 at n=18), severe overfit
     RandomForestModel(),
+    XGBoostModel(),
 ]

@@ -19,12 +19,13 @@ PREDICTION_OUTPUTS = {
     'bayesian_ridge': constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_bayesian_ridge.csv',
     # 'ard':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_ard.csv',           # dropped: poor at all thresholds
     'huber':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_huber.csv',
-    # 'svr':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_svr.csv',           # dropped: below top linear models
+    'svr':            constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_svr.csv',
     # 'elastic_net':  constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_elastic_net.csv',   # dropped: redundant with Ridge
     # 'rvm':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_rvm.csv',           # dropped: high variance, low R2
-    'kernel_ridge':   constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_kernel_ridge.csv',
+    # 'kernel_ridge': constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_kernel_ridge.csv',  # dropped: SVR used for kernel/SVM slot
     # 'hist_gb':      constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_hist_gb.csv',       # dropped: severe overfit, degrades with features
     'random_forest':  constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_random_forest.csv',
+    'xgboost':        constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_xgboost.csv',
 }
 
 MANUAL_PREDICTION_OUTPUTS = {
@@ -35,12 +36,13 @@ MANUAL_PREDICTION_OUTPUTS = {
     'bayesian_ridge': constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_bayesian_ridge_manual.csv',
     # 'ard':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_ard_manual.csv',           # dropped: poor at all thresholds
     'huber':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_huber_manual.csv',
-    # 'svr':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_svr_manual.csv',           # dropped: below top linear models
+    'svr':            constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_svr_manual.csv',
     # 'elastic_net':  constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_elastic_net_manual.csv',   # dropped: redundant with Ridge
     # 'rvm':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_rvm_manual.csv',           # dropped: high variance, low R2
-    'kernel_ridge':   constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_kernel_ridge_manual.csv',
+    # 'kernel_ridge': constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_kernel_ridge_manual.csv',  # dropped: SVR used for kernel/SVM slot
     # 'hist_gb':      constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_hist_gb_manual.csv',       # dropped: severe overfit, degrades with features
     'random_forest':  constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_random_forest_manual.csv',
+    'xgboost':        constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_xgboost_manual.csv',
 }
 
 
@@ -250,9 +252,9 @@ def run_threshold_sensitivity():
 
 
 if __name__ == "__main__":
-    #run_with_manual_features()
+    run_with_manual_features()
 
-    run_threshold_sensitivity()
+    #run_threshold_sensitivity()
     """
     for i in range(500):
         run_with_feature_selection(output_path=constants.EXPERIMENT_LOG_CSV)
