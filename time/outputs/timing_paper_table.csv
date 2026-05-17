@@ -2,15 +2,15 @@ component,per_image_or_call,notes
 SynthSeg subprocess (extraction),220.24s (IQR 219.47-221.04),"robust=True, fast=False, CPU; per-image wall-clock"
 Other 16 features (extraction),0.35s (IQR 0.34-0.35),single MRI load shared across features
 Total extraction per image,220.6s,SynthSeg median + other-16 median
-"Training - Ridge (Polynomial) (nested CV, n=88)",0.4s,total wall-clock incl. grid search
-"Training - Bayesian Ridge (Polynomial) (nested CV, n=88)",0.3s,total wall-clock incl. grid search
-"Training - Huber Regression (nested CV, n=88)",3.5s,total wall-clock incl. grid search
-"Training - SVR (RBF) (nested CV, n=88)",0.6s,total wall-clock incl. grid search
-"Training - Random Forest (nested CV, n=88)",240.3s,total wall-clock incl. grid search
-"Training - XGBoost (nested CV, n=88)",26.8s,total wall-clock incl. grid search
-Inference - Ridge (Polynomial) (1x18 vector),148.8 us,median over 1000 calls
-Inference - Bayesian Ridge (Polynomial) (1x18 vector),148.7 us,median over 1000 calls
-Inference - Huber Regression (1x18 vector),85.2 us,median over 1000 calls
-Inference - SVR (RBF) (1x18 vector),105.9 us,median over 1000 calls
-Inference - Random Forest (1x18 vector),17640.8 us,median over 1000 calls
-Inference - XGBoost (1x18 vector),649.0 us,median over 1000 calls
+"Training - Ridge",0.4s,total wall-clock incl. grid search
+"Training - Bayesian Ridge",0.3s,total wall-clock incl. grid search
+"Training - Huber Regression",3.5s,total wall-clock incl. grid search
+"Training - SVR (RBF)",0.6s,total wall-clock incl. grid search
+"Training - Random Forest",240.3s,total wall-clock incl. grid search
+"Training - XGBoost",26.8s,total wall-clock incl. grid search
+Inference - Ridge,148.8 us,median over 1000 calls
+Inference - Bayesian Ridge,148.7 us,median over 1000 calls
+Inference - Huber Regression,85.2 us,median over 1000 calls
+Inference - SVR (RBF),105.9 us,median over 1000 calls
+Inference - Random Forest,17640.8 us,median over 1000 calls
+Inference - XGBoost,649.0 us,median over 1000 calls
