@@ -1,2 +1,15 @@
-/__pycache__
+__pycache__
 /.venv
+
+/.claude
+/.wolf
+/CLAUDE.md
+/docs
+
+raiders_data_3d
+/scripts
+/reference
+
+# Timing benchmark — fresh SynthSeg outputs are large and reproducible
+time/synthseg_output_timing/*
+!time/synthseg_output_timing/.gitkeep

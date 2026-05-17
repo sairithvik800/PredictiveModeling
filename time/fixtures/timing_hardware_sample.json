@@ -1,0 +1,23 @@
+{
+  "platform": "Windows-11-10.0.26200-SP0",
+  "os": "Windows",
+  "os_release": "11",
+  "python_version": "3.13.9",
+  "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+  "cpu_brand": "13th Gen Intel(R) Core(TM) i7-13700HX",
+  "cpu_hz_advertised": "2.3040 GHz",
+  "cpu_count_logical": 24,
+  "ram_total_gb": 31.75,
+  "cpu_count_physical": 16,
+  "library_versions": {
+    "numpy": "2.2.4",
+    "scipy": "1.15.2",
+    "nibabel": "5.3.2",
+    "nilearn": "0.12.1",
+    "sklearn": "1.7.1",
+    "tensorflow": "2.20.0",
+    "pandas": "2.3.1",
+    "skimage": "0.25.2",
+    "SimpleITK": "2.5.3"
+  }
+}
