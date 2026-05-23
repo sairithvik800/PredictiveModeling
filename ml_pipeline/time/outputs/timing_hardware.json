@@ -1,0 +1,23 @@
+{
+  "platform": "Windows-11-10.0.26200-SP0",
+  "os": "Windows",
+  "os_release": "11",
+  "python_version": "3.13.9",
+  "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+  "cpu_brand": "",
+  "cpu_hz_advertised": "",
+  "cpu_count_logical": 0,
+  "ram_total_gb": 0.0,
+  "cpu_count_physical": 0,
+  "library_versions": {
+    "numpy": "2.4.2",
+    "scipy": "1.17.0",
+    "nibabel": "5.4.0",
+    "nilearn": "0.13.1",
+    "sklearn": "1.8.0",
+    "tensorflow": "not installed",
+    "pandas": "3.0.1",
+    "skimage": "0.26.0",
+    "SimpleITK": "not installed"
+  }
+}

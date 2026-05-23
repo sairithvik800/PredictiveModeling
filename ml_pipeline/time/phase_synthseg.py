@@ -1,8 +1,8 @@
 """Phase 1: time SynthSeg subprocess wall-clock per image across all 88 images.
 
-Uses reference/features.py's _run_synthseg_cli with production flags:
+Uses ml_pipeline/features.py's _run_synthseg_cli with production flags:
 robust=True, fast=False, use_cpu=True, crop_size=192. Writes fresh outputs to
-time/synthseg_output_timing/ so the production seg files are untouched.
+ml_pipeline/time/synthseg_output_timing/ so the production seg files are untouched.
 """
 import csv
 import sys
@@ -10,11 +10,7 @@ import time
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-# Order matters: reference/ must be ahead of repo root so `import features`
-# resolves to reference/features.py (which defines Datasets), not the root
-# features.py (which is reference-only documentation code).
 sys.path.insert(0, str(REPO_ROOT))
-sys.path.insert(0, str(REPO_ROOT / 'reference'))
 
 import constants
 import features as ref_features

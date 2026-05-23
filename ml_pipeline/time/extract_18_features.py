@@ -1,7 +1,7 @@
-"""Thin orchestrator that invokes reference/features.py helpers for the 16
+"""Thin orchestrator that invokes ml_pipeline/features.py helpers for the 16
 non-SynthSeg features in DEFAULT_FEATURES, recording wall-clock per image.
 
-Every COMPUTATION traces back to reference/features.py. We only restrict
+Every COMPUTATION traces back to ml_pipeline/features.py. We only restrict
 WHICH subset of helpers gets called - the same restriction deployment applies.
 """
 import sys
@@ -14,16 +14,13 @@ from nilearn import datasets, image
 from scipy.stats import kurtosis, median_abs_deviation, moment
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-# Insert reference/ AFTER repo root so other project imports still work,
-# but we import features explicitly by its full path below.
 sys.path.insert(0, str(REPO_ROOT))
-sys.path.insert(0, str(REPO_ROOT / 'reference'))
 
-import features as ref_features  # the real pipeline (reference/features.py)
+import features as ref_features  # the real pipeline (ml_pipeline/features.py)
 
 
 def _get_brain_mask(img_data: np.ndarray) -> np.ndarray:
-    """Match the heuristic used throughout reference/features.py."""
+    """Match the heuristic used throughout ml_pipeline/features.py."""
     if np.any(img_data > 0):
         threshold = np.percentile(img_data[img_data > 0], 10)
     else:

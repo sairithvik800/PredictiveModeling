@@ -20,21 +20,21 @@
 
 ## Hardware
 
-- CPU: 13th Gen Intel(R) Core(TM) i7-13700HX
-- RAM: 31.75 GB
-- OS: Windows-10-10.0.26200-SP0
-- Python: 3.11.14
+- CPU: 
+- RAM: 0.0 GB
+- OS: Windows-11-10.0.26200-SP0
+- Python: 3.13.9
 
 ### Library versions
 
-- SimpleITK: 2.5.5
-- nibabel: 5.3.3
-- nilearn: 0.13.0
-- numpy: 2.3.5
-- pandas: 2.3.3
-- scipy: 1.16.3
+- SimpleITK: not installed
+- nibabel: 5.4.0
+- nilearn: 0.13.1
+- numpy: 2.4.2
+- pandas: 3.0.1
+- scipy: 1.17.0
 - skimage: 0.26.0
-- sklearn: 1.7.1
+- sklearn: 1.8.0
 - tensorflow: not installed
 
 ## Notes
