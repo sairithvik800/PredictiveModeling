@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 import nibabel as nib
 from nilearn import datasets, image
-from scipy.stats import kurtosis, median_abs_deviation, moment
+from scipy.stats import kurtosis
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
@@ -47,7 +47,7 @@ def _extract_for_one_image(img_path: Path, datasets_inst: ref_features.Datasets,
     datasets_inst._compute_anatomical_complexity(img_data, brain_mask, affine)
     datasets_inst._compute_bias_field_features(img_data, brain_mask)
     datasets_inst._compute_structural_asymmetry(img_data, brain_mask)
-    datasets_inst._compute_tile_overlap_complexity(img_data, brain_mask)
+    datasets_inst._compute_tile_gradient_load_imbalance(img_data, brain_mask)
     datasets_inst._compute_ngtdm_features(img_data, brain_mask)
 
     # registration: needs template_affine; load template once outside ideally,
@@ -63,29 +63,7 @@ def _extract_for_one_image(img_path: Path, datasets_inst: ref_features.Datasets,
     resampled = image.resample_to_img(img, atlas_img, interpolation='linear')
     resampled_data = resampled.get_fdata()
     atlas_data = atlas_img.get_fdata()
-
-    # Stats per region we actually need (subset of the 100 ROIs)
-    needed_label_substrings = (
-        '7Networks_LH_Default_PFC_1',
-        '7Networks_RH_Default_PFCdPFCm_2',
-        '7Networks_LH_SalVentAttn_PFCl_1',
-        '7Networks_LH_Limbic_TempPole_1',
-        '7Networks_RH_SomMot_2',
-        '7Networks_RH_Cont_PFCl_3',
-        '7Networks_RH_DorsAttn_Post_3',
-    )
-    for i, label in enumerate(atlas_labels[1:], start=1):  # skip background
-        label_str = label.decode() if isinstance(label, bytes) else str(label)
-        if not any(needed in label_str for needed in needed_label_substrings):
-            continue
-        region_values = resampled_data[atlas_data == i]
-        region_values = region_values[region_values > 0]
-        if len(region_values) == 0:
-            continue
-        _ = np.ptp(region_values)               # range
-        _ = kurtosis(region_values)
-        _ = median_abs_deviation(region_values)
-        _ = moment(region_values, moment=5)
+    datasets_inst._compute_schaefer_region_stats(resampled_data, atlas_data, atlas_labels)
 
     other16_seconds = time.perf_counter() - start_total
     return other16_seconds, load_time_ms
