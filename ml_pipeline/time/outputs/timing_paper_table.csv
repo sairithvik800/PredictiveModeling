@@ -1,6 +1,6 @@
 component,per_image_or_call,notes
 SynthSeg subprocess (extraction),220.24s (IQR 219.47-221.04),"robust=True, fast=False, CPU; per-image wall-clock"
-Other 16 features (extraction),0.35s (IQR 0.34-0.35),single MRI load shared across features
+Other 16 features (extraction),0.35s (IQR 0.34-0.36),single MRI load shared across features
 Total extraction per image,220.6s,SynthSeg median + other-16 median
 "Training - Ridge (Polynomial) (nested CV, n=88)",0.4s,total wall-clock incl. grid search
 "Training - Bayesian Ridge (Polynomial) (nested CV, n=88)",0.3s,total wall-clock incl. grid search

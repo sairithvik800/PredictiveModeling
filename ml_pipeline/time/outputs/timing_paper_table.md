@@ -3,7 +3,7 @@
 | Component | Per-image / per-call | Notes |
 |---|---|---|
 | SynthSeg subprocess (extraction) | 220.24s (IQR 219.47-221.04) | robust=True, fast=False, CPU; per-image wall-clock |
-| Other 16 features (extraction) | 0.35s (IQR 0.34-0.35) | single MRI load shared across features |
+| Other 16 features (extraction) | 0.35s (IQR 0.34-0.36) | single MRI load shared across features |
 | Total extraction per image | 220.6s | SynthSeg median + other-16 median |
 | Training - Ridge (Polynomial) (nested CV, n=88) | 0.4s | total wall-clock incl. grid search |
 | Training - Bayesian Ridge (Polynomial) (nested CV, n=88) | 0.3s | total wall-clock incl. grid search |
@@ -20,21 +20,21 @@
 
 ## Hardware
 
-- CPU: 
-- RAM: 0.0 GB
-- OS: Windows-11-10.0.26200-SP0
-- Python: 3.13.9
+- CPU: 13th Gen Intel(R) Core(TM) i7-13700HX
+- RAM: 31.75 GB
+- OS: Windows-10-10.0.26200-SP0
+- Python: 3.11.14
 
 ### Library versions
 
-- SimpleITK: not installed
-- nibabel: 5.4.0
-- nilearn: 0.13.1
-- numpy: 2.4.2
-- pandas: 3.0.1
-- scipy: 1.17.0
+- SimpleITK: 2.5.5
+- nibabel: 5.3.3
+- nilearn: 0.13.0
+- numpy: 2.3.5
+- pandas: 2.3.3
+- scipy: 1.16.3
 - skimage: 0.26.0
-- sklearn: 1.8.0
+- sklearn: 1.7.1
 - tensorflow: not installed
 
 ## Notes
