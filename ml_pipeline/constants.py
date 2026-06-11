@@ -1,26 +1,35 @@
-# Features CSV from feature extraction
-FEATURES_CSV_OUTPUT = r'C:\Users\heage\OneDrive\Research\SLANT\PredictiveModeling\ml_pipeline\csv_files\inputs\features_data.csv'
-FEATURES_18_CSV_OUTPUT = r'C:\Users\heage\OneDrive\Research\SLANT\PredictiveModeling\ml_pipeline\csv_files\inputs\features_data_18.csv'
+"""Filesystem paths for the ML pipeline, resolved relative to this package.
 
-# Experiment logging for feature selection
-EXPERIMENT_LOG_CSV = r'C:\Users\heage\OneDrive\Research\SLANT\PredictiveModeling\ml_pipeline\csv_files\outputs\experiment_log.csv'
+Paths are derived from this file's location so the repo runs unchanged on any
+machine after the environment is created. Values are kept as ``str`` for
+compatibility with the string-concatenation and ``pd.read_csv`` call sites in
+main.py and features.py.
+"""
 
-# Directory to save CV predictions
-CSV_OUTPUT_DIR = r'C:\Users\heage\OneDrive\Research\SLANT\PredictiveModeling\ml_pipeline\csv_files'
+from pathlib import Path
 
-# Directories of MRI input volumes
-MRI_3D_IMAGE_DATA = r'C:\Users\heage\OneDrive\Research\SLANT\PredictiveModeling\ml_pipeline\csv_files\inputs\raiders_data_3d'
+_PKG_DIR = Path(__file__).resolve().parent   # .../ml_pipeline
+_REPO_DIR = _PKG_DIR.parent                   # repository root
+_CSV = _PKG_DIR / "csv_files"
 
-# Registration template
-TARGET_IMAGE = r''
+# Feature CSVs produced by feature extraction.
+FEATURES_CSV_OUTPUT = str(_CSV / "inputs" / "features_data.csv")        # full 1506-col exploratory input (read by main.py)
+FEATURES_18_CSV_OUTPUT = str(_CSV / "inputs" / "features_data_18.csv")  # 18-feature deploy extractor output (written by features.py)
 
-# SLANT/EC2 runtime data (placeholders; only required if those extractors are run)
-SLANT_RUNTIME_DATA = r''
-EC2_RUNTIME_DATA = r''
+# Experiment logging for the stochastic feature-selection mode.
+EXPERIMENT_LOG_CSV = str(_CSV / "outputs" / "experiment_log.csv")
 
-# SynthSeg
-SYNTHSEG_OUTPUT_DIR = r'C:\Users\heage\OneDrive\Research\SLANT\PredictiveModeling\ml_pipeline\time\synthseg_output_timing'
-SYNTHSEG_VOLUMES_CSV = SYNTHSEG_OUTPUT_DIR + r'\all_volumes.csv'
-SYNTHSEG_QC_CSV = SYNTHSEG_OUTPUT_DIR + r'\all_qc.csv'
-SYNTHSEG_CONDA_ENV = 'synthseg_38'
-SYNTHSEG_PREDICT_SCRIPT = r'C:\Users\heage\OneDrive\Research\SLANT\PredictiveModeling\reference\SynthSeg\scripts\commands\SynthSeg_predict.py'
+# Base directory under which CV predictions are written (main.py appends '/outputs/...').
+CSV_OUTPUT_DIR = str(_CSV)
+
+# --- Paths to data NOT shipped with this repo; only needed to re-run feature extraction. ---
+
+# Directory of MRI input volumes.
+MRI_3D_IMAGE_DATA = str(_CSV / "inputs" / "raiders_data_3d")
+
+# SynthSeg segmentation step of feature extraction.
+SYNTHSEG_OUTPUT_DIR = str(_PKG_DIR / "time" / "synthseg_output_timing")
+SYNTHSEG_CONDA_ENV = "synthseg_38"
+SYNTHSEG_PREDICT_SCRIPT = str(
+    _REPO_DIR / "reference" / "SynthSeg" / "scripts" / "commands" / "SynthSeg_predict.py"
+)
