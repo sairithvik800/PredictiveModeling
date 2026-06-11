@@ -1,7 +1,0 @@
-model,train_seconds,predict_us_median
-Ridge (Polynomial),0.38,148.8
-Bayesian Ridge (Polynomial),0.33,148.7
-Huber Regression,3.49,85.2
-SVR (RBF),0.59,105.9
-Random Forest,240.29,17640.8
-XGBoost,26.8,649.0
