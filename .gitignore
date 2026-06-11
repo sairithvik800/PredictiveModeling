@@ -9,7 +9,4 @@ __pycache__
 raiders_data_3d
 /ml_pipeline/scripts
 /reference
-
-# Timing benchmark — fresh SynthSeg outputs are large and reproducible
-ml_pipeline/time/synthseg_output_timing/*
-!ml_pipeline/time/synthseg_output_timing/.gitkeep
+/ml_pipeline/time/
