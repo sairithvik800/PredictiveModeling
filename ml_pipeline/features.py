@@ -1,17 +1,14 @@
-"""Deployment feature extractor for the SLANT makespan-prediction paper.
+"""Deployment feature extractor
 
 Computes the 18 features used by the deployed model (DEFAULT_FEATURES in
 ml_pipeline/main.py). The original 1,508-feature exploratory extractor that
-produced csv_files/inputs/features_data.csv is archived in the dev repo
-<DEV_REPO_URL>; see paper Section 1 for details. The feature selection
+produced csv_files/inputs/features_data.csv is archived. The feature selection
 pipeline that narrowed 1,508 -> 18 lives in
 ml_pipeline/feature_selection_pipeline.py and is fully reproducible against
-features_data.csv (paper Section 2).
+features_data.csv.
 
 Run standalone:
-    python ml_pipeline/features.py [<mri_dir>]
-
-TODO(heagen): replace <DEV_REPO_URL> with the actual archive repo URL.
+    python ml_pipeline/features.py
 """
 import argparse
 import os
@@ -29,14 +26,10 @@ from scipy.stats import kurtosis, median_abs_deviation, moment
 from skimage.morphology import ball
 from skimage.filters.rank import entropy as skimage_entropy
 from nilearn import datasets, image
-from constants import SYNTHSEG_CONDA_ENV, SYNTHSEG_PREDICT_SCRIPT, MRI_3D_IMAGE_DATA, FEATURES_CSV_OUTPUT, SYNTHSEG_OUTPUT_DIR
+from constants import SYNTHSEG_CONDA_ENV, SYNTHSEG_PREDICT_SCRIPT, MRI_3D_IMAGE_DATA, FEATURES_18_CSV_OUTPUT, SYNTHSEG_OUTPUT_DIR
 
 class Datasets:
     def __init__(self, atlas=None):
-        """Atlas param retained for backward compat with consumers (e.g.,
-        ml_pipeline/time/extract_18_features.py which passes a fetched
-        Schaefer atlas). The kept compute methods do not read self attrs.
-        """
         self._atlas = atlas
 
     def _check_synthseg_environment(self):
@@ -467,24 +460,9 @@ class Datasets:
         return tile_features
 
 
-def extract_features_to_csv(mri_dir=None, output_path=None):
-    """Extract the 18 deployed features for every .nii.gz in mri_dir and write to CSV.
-
-    Args:
-        mri_dir: Directory containing 3D MRI .nii.gz files. Defaults to
-            MRI_3D_IMAGE_DATA from constants.py.
-        output_path: CSV output path. Defaults to
-            <FEATURES_CSV_OUTPUT.parent>/features_data_18.csv so it does NOT
-            overwrite the historical 1,506-col features_data.csv.
-
-    Returns:
-        DataFrame with one row per MRI, columns: filename + the 18 features
-        in DEFAULT_FEATURES order.
-    """
-    if mri_dir is None:
-        mri_dir = Path(MRI_3D_IMAGE_DATA)
-    if output_path is None:
-        output_path = Path(FEATURES_CSV_OUTPUT).parent / 'features_data_18.csv'
+def extract_features_to_csv():
+    mri_dir = Path(MRI_3D_IMAGE_DATA)
+    output_path = Path(FEATURES_18_CSV_OUTPUT)
 
     atlas = datasets.fetch_atlas_schaefer_2018(n_rois=100, yeo_networks=7, resolution_mm=2)
     atlas_img = nib.load(atlas.maps)
@@ -568,19 +546,4 @@ def extract_features_to_csv(mri_dir=None, output_path=None):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description='Extract the 18 deployed features from MRIs in a directory.'
-    )
-    parser.add_argument(
-        'mri_dir', nargs='?', default=None,
-        help='Directory of 3D .nii.gz files. Defaults to MRI_3D_IMAGE_DATA from constants.py.',
-    )
-    parser.add_argument(
-        '--output', default=None,
-        help='Output CSV path. Defaults to features_data_18.csv next to the historical CSV.',
-    )
-    args = parser.parse_args()
-    extract_features_to_csv(
-        mri_dir=Path(args.mri_dir) if args.mri_dir else None,
-        output_path=Path(args.output) if args.output else None,
-    )
+    extract_features_to_csv()

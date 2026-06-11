@@ -9,53 +9,25 @@ import feature_selection_pipeline
 import model_eval_pipeline
 from models import DEFAULT_MODELS
 
-
-# For feature selection runs
-PREDICTION_OUTPUTS = {
+FEATURE_SELECTION_PREDICTION_OUTPUTS = {
     'ridge':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_ridge.csv',
-    # 'gpr':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_gpr.csv',          # dropped: dominated by Matern 2.5
-    'gpr_matern25':   constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_gpr_matern25.csv',
-    # 'gpr_rbf':      constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_gpr_rbf.csv',      # dropped: near-identical to Matern 2.5
     'bayesian_ridge': constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_bayesian_ridge.csv',
-    # 'ard':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_ard.csv',           # dropped: poor at all thresholds
     'huber':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_huber.csv',
     'svr':            constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_svr.csv',
-    # 'elastic_net':  constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_elastic_net.csv',   # dropped: redundant with Ridge
-    # 'rvm':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_rvm.csv',           # dropped: high variance, low R2
-    # 'kernel_ridge': constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_kernel_ridge.csv',  # dropped: SVR used for kernel/SVM slot
-    # 'hist_gb':      constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_hist_gb.csv',       # dropped: severe overfit, degrades with features
     'random_forest':  constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_random_forest.csv',
     'xgboost':        constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_xgboost.csv',
 }
 
 MANUAL_PREDICTION_OUTPUTS = {
     'ridge':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_ridge_manual.csv',
-    # 'gpr':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_gpr_manual.csv',          # dropped: dominated by Matern 2.5
-    'gpr_matern25':   constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_gpr_matern25_manual.csv',
-    # 'gpr_rbf':      constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_gpr_rbf_manual.csv',      # dropped: near-identical to Matern 2.5
     'bayesian_ridge': constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_bayesian_ridge_manual.csv',
-    # 'ard':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_ard_manual.csv',           # dropped: poor at all thresholds
     'huber':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_huber_manual.csv',
     'svr':            constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_svr_manual.csv',
-    # 'elastic_net':  constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_elastic_net_manual.csv',   # dropped: redundant with Ridge
-    # 'rvm':          constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_rvm_manual.csv',           # dropped: high variance, low R2
-    # 'kernel_ridge': constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_kernel_ridge_manual.csv',  # dropped: SVR used for kernel/SVM slot
-    # 'hist_gb':      constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_hist_gb_manual.csv',       # dropped: severe overfit, degrades with features
     'random_forest':  constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_random_forest_manual.csv',
     'xgboost':        constants.CSV_OUTPUT_DIR + '/outputs/cv_predictions_xgboost_manual.csv',
 }
 
-
-# Features selected by frequency threshold from 500 stochastic pipeline runs.
-# Each tier is a strict subset of the next: FEATURES_96 ⊂ FEATURES_50 ⊂ FEATURES_24.
-# Used for sensitivity analysis and as the primary feature set (FEATURES_24 = DEFAULT_FEATURES).
-# Tiers reflect natural breaks in the frequency distribution:
-#   >=96%: sharpest break in the distribution (96.2% -> 81.8%, 14pp drop)
-#   >=50%: top of the gradual-decline plateau
-#   >=24%: natural cliff into noise (24.2% -> 14.0%, 10pp drop)
-
-FEATURES_96 = [
-    # >=96% selection frequency — "virtually always selected"
+FEATURES_96 = [                                            # frequecy % based off feature selection pipeline
     'load_time_ms',                                        # 100.0%
     'synthseg_total_components',                           # 100.0%
     'synthseg_fragmentation_index',                        # 100.0%
@@ -68,7 +40,6 @@ FEATURES_96 = [
 ]
 
 FEATURES_50 = FEATURES_96 + [
-    # >=50% selection frequency
     'asymmetry_hemispheric_volume_ratio',                  #  81.8%
     '7Networks_LH_SalVentAttn_PFCl_1_kurtosis',           #  76.0%
     'tile_gradient_load_imbalance',                        #  69.6%
@@ -78,13 +49,11 @@ FEATURES_50 = FEATURES_96 + [
 ]
 
 FEATURES_24 = FEATURES_50 + [
-    # >=24% selection frequency (natural cliff at 24.2% -> 14.0% terminates the set)
     '7Networks_RH_SomMot_2_kurtosis',                     #  42.4%
     '7Networks_RH_Cont_PFCl_3_kurtosis',                  #  36.4%
     '7Networks_RH_DorsAttn_Post_3_kurtosis',               #  24.2%
 ]
 
-# Primary feature set for paper results (>=24% threshold, n=18).
 DEFAULT_FEATURES = FEATURES_24
 
 
@@ -135,7 +104,7 @@ def run_with_feature_selection(
             print(f"{'=' * 70}\n")
             results = model_eval_pipeline.nested_cv_evaluation(pipeline, param_grid, X_all, y_all)
             model_eval_pipeline.print_nested_cv_results(model.name, results)
-            model_eval_pipeline.save_nested_cv_predictions(df, results, PREDICTION_OUTPUTS[model.key])
+            model_eval_pipeline.save_nested_cv_predictions(df, results, FEATURE_SELECTION_PREDICTION_OUTPUTS[model.key])
             model_results_map[model.key] = results
 
         model_eval_pipeline.log_experiment_run(
@@ -189,72 +158,11 @@ def run_with_manual_features(features=None):
     print("=" * 70)
     for name, res in model_results:
         print(f"  {name:<30} overall_r2={res['overall_r2']:.4f}  mae={res['overall_mae']:.1f}s")
-
-
-def run_threshold_sensitivity():
-    """Sensitivity analysis: evaluate all models at >=96%, >=50%, and >=24% thresholds.
-
-    Intended for the paper's sensitivity table. Results are printed but not
-    saved to the main prediction CSVs so they do not overwrite primary results.
-    """
-    thresholds = [
-        ('>=96%',  FEATURES_96),
-        ('>=50%',  FEATURES_50),
-        ('>=24%',  FEATURES_24),
-    ]
-
-    df = pd.read_csv(constants.FEATURES_CSV_OUTPUT)
-    y_all = df['makespan'].values
-
-    # results[label][model_key] = overall_r2, overall_mae
-    all_results = {}
-    for label, features in thresholds:
-        print(f"\n{'=' * 70}")
-        print(f"THRESHOLD {label}  ({len(features)} features)")
-        print(f"{'=' * 70}")
-        X_all = df[features].values
-        threshold_results = {}
-        for model in DEFAULT_MODELS:
-            pipeline, param_grid = model.get_pipeline_and_params()
-            print(f"  {model.name}...", flush=True)
-            cv_results = model_eval_pipeline.nested_cv_evaluation(pipeline, param_grid, X_all, y_all)
-            threshold_results[model.key] = cv_results
-        all_results[label] = threshold_results
-
-    # Print comparison table
-    col_w = 13
-    print("\n" + "=" * (28 + len(thresholds) * col_w * 2))
-    print("SENSITIVITY ANALYSIS — FREQUENCY THRESHOLD COMPARISON")
-    print("=" * (28 + len(thresholds) * col_w * 2))
-
-    header = f"{'Model':<28}"
-    for label, features in thresholds:
-        header += f"  {(label + ' R2'):>{col_w}}  {'MAE':>{col_w - 2}}"
-    print(header)
-    print("-" * (28 + len(thresholds) * col_w * 2))
-
-    for model in DEFAULT_MODELS:
-        row = f"{model.name:<28}"
-        for label, _ in thresholds:
-            r2  = all_results[label][model.key]['overall_r2']
-            mae = all_results[label][model.key]['overall_mae']
-            row += f"  {r2:>{col_w}.4f}  {mae:>{col_w - 2}.1f}s"
-        print(row)
-
-    print("=" * (28 + len(thresholds) * col_w * 2))
-    n_row = f"{'n features':<28}"
-    for _, features in thresholds:
-        n_row += f"  {'n='+str(len(features)):>{col_w}}  {'':>{col_w - 2}}"
-    print(n_row)
-    print("=" * (28 + len(thresholds) * col_w * 2))
-
-    return all_results
-
+        
 
 if __name__ == "__main__":
     run_with_manual_features()
 
-    #run_threshold_sensitivity()
     """
     for i in range(500):
         run_with_feature_selection(output_path=constants.EXPERIMENT_LOG_CSV)

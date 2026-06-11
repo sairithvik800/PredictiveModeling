@@ -40,13 +40,9 @@ def remove_highly_correlated_features(df, feature_cols, target_col, threshold=0.
     X = df[feature_cols].values
     y = df[target_col].values
 
-    # Compute correlation matrix
     corr_matrix = np.corrcoef(X.T)
-
-    # Compute target correlations
     target_corrs = np.array([abs(pearsonr(X[:, i], y)[0]) for i in range(X.shape[1])])
 
-    # Find pairs above threshold
     to_remove = set()
     n_features = len(feature_cols)
 
@@ -57,12 +53,11 @@ def remove_highly_correlated_features(df, feature_cols, target_col, threshold=0.
             if j in to_remove:
                 continue
             if abs(corr_matrix[i, j]) > threshold:
-                # Remove the one with lower target correlation
                 if target_corrs[i] >= target_corrs[j]:
                     to_remove.add(j)
                 else:
                     to_remove.add(i)
-                    break  # i is removed, move to next i
+                    break
 
     kept_features = [f for idx, f in enumerate(feature_cols) if idx not in to_remove]
     print(f"  High correlation filter (>{threshold}): {len(feature_cols)} -> {len(kept_features)} features (removed {len(to_remove)})")
@@ -78,7 +73,6 @@ def filter_by_target_correlation(df, feature_cols, target_col, min_corr=0.15):
 
     for feat in feature_cols:
         x = df[feat].values
-        # Handle NaN
         valid_mask = ~(np.isnan(x) | np.isnan(y))
         if valid_mask.sum() < 10:
             continue
@@ -114,33 +108,21 @@ def stability_selection_lasso(df, feature_cols, target_col, n_bootstraps=100, se
         X_boot = X[indices]
         y_boot = y[indices]
 
-        # Scale features
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X_boot)
-
-        # Fit LassoCV
         lasso = LassoCV(cv=3, random_state=i, max_iter=5000, n_alphas=50)
         lasso.fit(X_scaled, y_boot)
 
-        # Track which features have non-zero coefficients
         selected = np.abs(lasso.coef_) > 1e-10
         selection_counts += selected
 
         if (i + 1) % 25 == 0:
             print(f"    Bootstrap {i + 1}/{n_bootstraps} complete")
 
-    # Compute selection frequencies
     selection_freq = selection_counts / n_bootstraps
 
-    # Keep features selected more than threshold fraction of time
     kept_indices = np.where(selection_freq >= selection_threshold)[0]
     kept_features = [feature_cols[i] for i in kept_indices]
-
-    # Print top stable features
-    top_indices = np.argsort(selection_freq)[::-1][:10]
-    print(f"\n  Top 10 most stable features:")
-    for idx in top_indices:
-        print(f"    {feature_cols[idx]}: {selection_freq[idx]:.2%}")
 
     print(f"\n  Stability selection (>{selection_threshold:.0%}): {len(feature_cols)} -> {len(kept_features)} features")
     return kept_features, selection_freq
@@ -158,34 +140,25 @@ def cluster_and_select_features(df, feature_cols, target_col, n_clusters=None, c
     X = df[feature_cols].values
     y = df[target_col].values
 
-    # Compute correlation matrix
     corr_matrix = np.corrcoef(X.T)
-
-    # Convert to distance matrix (1 - |correlation|)
     distance_matrix = 1 - np.abs(corr_matrix)
     np.fill_diagonal(distance_matrix, 0)
 
-    # Ensure symmetry and handle numerical issues
     distance_matrix = (distance_matrix + distance_matrix.T) / 2
     distance_matrix = np.clip(distance_matrix, 0, 2)
 
-    # Hierarchical clustering
     condensed_dist = squareform(distance_matrix)
     linkage_matrix = linkage(condensed_dist, method='average')
 
-    # Determine number of clusters if not specified
     if n_clusters is None:
-        # Cut tree at distance corresponding to corr_threshold
         cut_distance = 1 - corr_threshold
         cluster_labels = fcluster(linkage_matrix, t=cut_distance, criterion='distance')
         n_clusters = len(np.unique(cluster_labels))
     else:
         cluster_labels = fcluster(linkage_matrix, t=n_clusters, criterion='maxclust')
 
-    # Compute target correlations
     target_corrs = {feat: abs(pearsonr(df[feat].values, y)[0]) for feat in feature_cols}
 
-    # Select best feature from each cluster
     selected_features = []
     for cluster_id in np.unique(cluster_labels):
         cluster_features = [f for f, c in zip(feature_cols, cluster_labels) if c == cluster_id]
@@ -202,11 +175,9 @@ def rfecv_selection(df, feature_cols, target_col, min_features=5, cv=5):
     X = df[feature_cols].values
     y = df[target_col].values
 
-    # Scale features
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
 
-    # Use simple RandomForest for stability
     estimator = RandomForestRegressor(
         n_estimators=100,
         max_depth=3,
@@ -215,7 +186,6 @@ def rfecv_selection(df, feature_cols, target_col, min_features=5, cv=5):
         n_jobs=1
     )
 
-    # RFECV
     rfecv = RFECV(
         estimator=estimator,
         step=1,
@@ -227,7 +197,6 @@ def rfecv_selection(df, feature_cols, target_col, min_features=5, cv=5):
 
     rfecv.fit(X_scaled, y)
 
-    # Get selected features
     selected_mask = rfecv.support_
     selected_features = [f for f, s in zip(feature_cols, selected_mask) if s]
 
@@ -244,7 +213,6 @@ def full_feature_selection_pipeline(df, target_col='makespan'):
         selected_features: list of selected feature names
         pipeline_stats: dict with statistics from each stage
     """
-    # Get all feature columns (exclude filename and target)
     all_features = [c for c in df.columns if c not in ['filename', target_col, 'bin']]
 
     print("=" * 70)
@@ -254,8 +222,7 @@ def full_feature_selection_pipeline(df, target_col='makespan'):
     print()
 
     pipeline_stats = {'initial': len(all_features)}
-
-    # Stage 1: Variance and correlation pre-filtering
+    
     print("STAGE 1: Pre-filtering")
     print("-" * 40)
     features = remove_low_variance_features(df, all_features, threshold=0.01)
@@ -265,14 +232,12 @@ def full_feature_selection_pipeline(df, target_col='makespan'):
     pipeline_stats['after_corr_filter'] = len(features)
     print()
 
-    # Stage 2: Target correlation filtering
     print("STAGE 2: Target Correlation Filtering")
     print("-" * 40)
     features = filter_by_target_correlation(df, features, target_col, min_corr=0.15)
     pipeline_stats['after_target_corr'] = len(features)
     print()
 
-    # Stage 3: Stability selection
     print("STAGE 3: Stability Selection (Bootstrapped Lasso)")
     print("-" * 40)
     features, stability_scores = stability_selection_lasso(
@@ -283,7 +248,6 @@ def full_feature_selection_pipeline(df, target_col='makespan'):
     pipeline_stats['after_stability'] = len(features)
     print()
 
-    # Stage 4: Clustering
     print("STAGE 4: Hierarchical Clustering")
     print("-" * 40)
     if len(features) > 5:
@@ -291,7 +255,6 @@ def full_feature_selection_pipeline(df, target_col='makespan'):
     pipeline_stats['after_clustering'] = len(features)
     print()
 
-    # Summary
     print("=" * 70)
     print("PIPELINE SUMMARY")
     print("=" * 70)
